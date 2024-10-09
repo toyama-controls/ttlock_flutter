@@ -161,12 +161,23 @@ class SmartLock {
     return completer.future;
   }
 
-  static Future<void> configWifi(
+  static Future<bool> configWifi(
       {required String wifiName,
       required String wifiPassword,
       required String lockData}) {
     Completer<bool> completer = Completer();
     TTLock.configWifi(wifiName, wifiPassword, lockData, () {
+      completer.complete(true);
+    }, (errCode, errMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errMessage, errCode: errCode.name);
+    });
+    return completer.future;
+  }
+
+  static Future<void> configWifiServer(String lockData) {
+    Completer completer = Completer();
+    TTLock.configServer("wifilock.ttlock.com", "4999", lockData, () {
       completer.complete(true);
     }, (errCode, errMessage) {
       completer.complete(false);
