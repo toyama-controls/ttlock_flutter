@@ -5,6 +5,7 @@ import 'package:ttlock_flutter/smart_lock_error.dart';
 import 'package:ttlock_flutter/tt_gateway_connection.dart';
 import 'package:ttlock_flutter/ttgateway.dart';
 import 'package:ttlock_flutter/ttlock.dart';
+import 'package:ttlock_flutter/wifi_scan_result.dart';
 
 class SmartLock {
   static StreamController<TTLockScanModel> _lockScanController =
@@ -150,14 +151,15 @@ class SmartLock {
     );
   }
 
-  static Future<List<TTWifiInfoModel>> scanWifi(
+  static Future<List<WifiScanResult>> scanWifi(
       {required String lockData}) async {
-    Completer<List<TTWifiInfoModel>> completer = Completer();
+    Completer<List<WifiScanResult>> completer = Completer();
     TTLock.scanWifi(lockData, (hasFinished, wifiList) {
       if (hasFinished) {
-        completer.complete(wifiList.map((wifi) {
-          return TTWifiInfoModel(jsonDecode(wifi));
-        }).toList());
+        final List<Map<String, dynamic>> res = wifiList
+            .map((element) => jsonDecode(element))
+            .toList() as List<Map<String, dynamic>>;
+        completer.complete(WifiScanResult.fromMapList(res));
       }
     }, (errCode, errMessage) {
       throw SmartLockException(errorMessage: errMessage, errCode: errCode.name);
