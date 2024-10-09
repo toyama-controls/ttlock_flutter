@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ttlock_flutter/smart_lock_error.dart';
+import 'package:ttlock_flutter/tt_gateway_connection.dart';
 import 'package:ttlock_flutter/ttgateway.dart';
 import 'package:ttlock_flutter/ttlock.dart';
 
@@ -114,6 +115,10 @@ class SmartLock {
     return completer.future;
   }
 
+  static Future<TtGatewayConnection> createGatewayConnection(String mac) async {
+    return TtGatewayConnection(mac);
+  }
+
   static Future<bool> initGateway(
       {required String macAddress,
       required String wifiName,
@@ -144,15 +149,32 @@ class SmartLock {
     );
   }
 
-  static Future<Stream<TTWifiInfoModel>> startWifiScan(
-      {required String lockData}) async {
-    //TODO implement start wifi scan
-    return wifiInfoStream;
+  static Future<List<dynamic>> startWifiScan({required String lockData}) async {
+    Completer<List<dynamic>> completer = Completer();
+    TTLock.scanWifi(lockData, (hasFinished, wifiList) {
+      if (hasFinished) {
+        completer.complete(wifiList);
+      }
+    }, (errCode, errMessage) {
+      throw SmartLockException(errorMessage: errMessage, errCode: errCode.name);
+    });
+    return completer.future;
   }
 
-  static Future<void> stopWifiScan() async {
-    //TODO implement stop wifi scan
+  static Future<void> configWifi(
+      {required String wifiName,
+      required String wifiPassword,
+      required String lockData}) {
+    Completer<bool> completer = Completer();
+    TTLock.configWifi(wifiName, wifiPassword, lockData, () {
+      completer.complete(true);
+    }, (errCode, errMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errMessage, errCode: errCode.name);
+    });
+    return completer.future;
   }
+
   static Future<TTWifiInfoModel> getWifiInfo({required String lockData}) async {
     Completer<TTWifiInfoModel> completer = Completer();
     TTLock.getWifiInfo(lockData, (wifiInfoModel) {
