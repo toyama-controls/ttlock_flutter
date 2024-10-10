@@ -124,7 +124,7 @@ class SmartLock {
       {required String macAddress,
       required String wifiName,
       required String wifiPassword,
-      required String uid,
+      required int uid,
       required String userPasswordmd5,
       required String gatewayName}) async {
     Completer<bool> completer = Completer();
