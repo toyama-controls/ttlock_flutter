@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ttlock_flutter/enum.dart';
 import 'package:ttlock_flutter/smart_lock_error.dart';
 import 'package:ttlock_flutter/tt_gateway_connection.dart';
 import 'package:ttlock_flutter/ttgateway.dart';
@@ -7,6 +8,9 @@ import 'package:ttlock_flutter/ttlock.dart';
 import 'package:ttlock_flutter/wifi_scan_result.dart';
 
 class SmartLock {
+  /// A thin wrapper over the TTLock SDK.
+  /// Uses awaitable Futures over callbacks
+
   static StreamController<TTLockScanModel> _lockScanController =
       StreamController.broadcast();
   static Stream<TTLockScanModel> get lockScanStream =>
@@ -57,6 +61,24 @@ class SmartLock {
       completer.complete(lockData);
     }, (error, errorMessage) {
       throw SmartLockException(errCode: error.name, errorMessage: errorMessage);
+    });
+    return completer.future;
+  }
+
+  /// Reset a lock.Deletes it's lock data and sets the lock to Setting mode.
+  ///
+  /// The [lockData] parameter is required to reset the lock.
+  ///
+  /// The returned Future will complete with true if the operation is successful.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<bool> resetLock({required String lockData}) async {
+    Completer<bool> completer = Completer();
+    TTLock.resetLock(lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
     });
     return completer.future;
   }
@@ -127,6 +149,7 @@ class SmartLock {
   /// The Future will throw a [SmartLockException] if there is an error.
   static Future<String> setLockRemoteUnlockSwitchState(
       {required String lockData, required bool isOn}) async {
+    //TODO change isOn on [RemoteUnlockState]
     Completer<String> completer = Completer();
     TTLock.setLockRemoteUnlockSwitchState(isOn, lockData, (lockData) {
       completer.complete(lockData);
@@ -137,19 +160,214 @@ class SmartLock {
     return completer.future;
   }
 
-  /// Reset a lock.Deletes it's lock data and sets the lock to Setting mode.
+  /// Get the remote unlock switch state.
   ///
-  /// The [lockData] parameter is required to reset the lock.
+  /// The [lockData] parameter is required to get the remote unlock switch state.
+  ///
+  /// The returned Future will complete with [RemoteUnlockState.ENABLED] if remote
+  /// unlock is enabled, [RemoteUnlockState.DISABLED] if remote unlock is disabled.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<RemoteUnlockState> getRemoteUnlockSwitchState(
+      String lockData) async {
+    final completer = Completer<RemoteUnlockState>();
+
+    TTLock.getLockRemoteUnlockSwitchState(lockData, (isOn) {
+      completer.complete(
+          isOn ? RemoteUnlockState.ENABLED : RemoteUnlockState.DISABLED);
+    }, (error, errorMessage) {
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Set the lock time.
+  ///
+  /// The [lockData] parameter is required to set the lock time.
+  ///
+  /// The [timestamp] parameter is required and is the timestamp of the lock time.
   ///
   /// The returned Future will complete with true if the operation is successful.
   ///
   /// The Future will throw a [SmartLockException] if there is an error.
-  static Future<bool> resetLock({required String lockData}) async {
+  static Future<bool> setLockTime(String lockData, int timestamp) async {
     Completer<bool> completer = Completer();
-    TTLock.resetLock(lockData, () {
+    TTLock.setLockTime(timestamp, lockData, () {
       completer.complete(true);
     }, (error, errorMessage) {
       completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Get the lock time.
+  ///
+  /// The [lockData] parameter is required to get the lock time.
+  ///
+  /// The returned Future will complete with the timestamp of the lock time.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<int> getLockTime(String lockData) async {
+    Completer<int> completer = Completer();
+    TTLock.getLockTime(lockData, (timestamp) {
+      completer.complete(timestamp);
+    }, (error, errorMessage) {
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Get the operation log of a lock.
+  ///
+  /// The [type] parameter is the type of the operation log.
+  /// The type can be [TTOperateRecordType.latest] : the latest action of the lock
+  /// or [TTOperateRecordType.total] : the total log of the lock.
+  ///
+  /// The returned Future will complete with the operation log string.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<String> getLockOperateRecord(
+      TTOperateRecordType type, String lockData) async {
+    final completer = Completer<String>();
+    TTLock.getLockOperateRecord(type, lockData, (record) {
+      completer.complete(record);
+    }, (error, errorMessage) {
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Get the battery level of a lock.
+  ///
+  /// The [lockData] parameter is required to get the power level.
+  ///
+  /// The returned Future will complete with the battery level of the lock, in percentage.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<int> getLockPower(String lockData) async {
+    final completer = Completer<int>();
+    TTLock.getLockPower(lockData, (batteryLevel) {
+      completer.complete(batteryLevel);
+    }, (error, errorMessage) {
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Set the lock automatic locking periodic time.
+  ///
+  /// The [duration] and [lockData] parameters are required to set the automatic locking time
+  /// for a lock. The duration must be a positive duration.
+  /// The returned Future will complete with true if the operation is successful.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<bool> setAutoLockingPeriod(
+      {required Duration duration, required String lockData}) async {
+    final completer = Completer<bool>();
+    TTLock.setLockAutomaticLockingPeriodicTime(duration.inSeconds, lockData,
+        () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Create a custom passcode for a lock.
+  ///
+  /// The [passCode] parameter is required and is the passcode to be created.
+  /// The [startDate] and [endDate] parameters are the start and end
+  /// dates of the passcode's validity period.
+  ///
+  /// The [lockData] paramter is the lock data of the target lock.
+  ///
+  /// The returned Future will complete with true if the operation is successful.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<bool> setCustomPasscode(
+      {required String passCode,
+      required DateTime startDate,
+      required DateTime endDate,
+      required String lockData}) async {
+    final completer = Completer<bool>();
+    TTLock.createCustomPasscode(passCode, startDate.millisecondsSinceEpoch,
+        endDate.millisecondsSinceEpoch, lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Modify a custom passcode for a lock.
+  ///
+  /// The [oldPassCode] parameter is the passcode to be modified.
+  /// The [newPassCode] parameter is the new passcode to replace the old one.
+  /// The [startDate] and [endDate] parameters are the start and end
+  /// dates of the new passcode's validity period.
+  ///
+  /// The [lockData] paramter is the lock data of the target lock.
+  ///
+  /// The returned Future will complete with true if the operation is successful.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<bool> modifyPassCode(
+      {required String oldPassCode,
+      required String newPassCode,
+      required DateTime startDate,
+      required DateTime endDate,
+      required String lockData}) {
+    final completer = Completer<bool>();
+    TTLock.modifyPasscode(
+        oldPassCode,
+        newPassCode,
+        startDate.millisecondsSinceEpoch,
+        endDate.millisecondsSinceEpoch,
+        lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Delete a custom passcode for a lock.
+  ///
+  /// The [passCode] parameter is the passcode to be deleted.
+  ///
+  /// The [lockData] parameter is the lock data of the target lock.
+  ///
+  /// The returned Future will complete with true if the operation is successful.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<bool> deletePasscode(
+      {required String passCode, required String lockData}) async {
+    final completer = Completer<bool>();
+    TTLock.deletePasscode(passCode, lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+      throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
+    });
+    return completer.future;
+  }
+
+  /// Reset all passcodes for a lock.
+  ///
+  /// The [lockData] parameter is required to reset all passcodes for a lock.
+  ///
+  /// The returned Future will complete with a string containing the new admin passcode.
+  ///
+  /// The Future will throw a [SmartLockException] if there is an error.
+  static Future<String> resetPassCodes(String lockData) async {
+    final completer = Completer<String>();
+    TTLock.resetPasscode(lockData, (string) {
+      completer.complete(string);
+    }, (error, errorMessage) {
       throw SmartLockException(errorMessage: errorMessage, errCode: error.name);
     });
     return completer.future;

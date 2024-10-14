@@ -1,0 +1,1 @@
+enum RemoteUnlockState { ENABLED, DISABLED }
