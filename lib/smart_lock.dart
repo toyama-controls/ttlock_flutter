@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:ttlock_flutter/enum.dart';
-import 'package:ttlock_flutter/smart_lock_error.dart';
+import 'package:ttlock_flutter/smart_lock_models/add_fingerprint_result.dart';
+import 'package:ttlock_flutter/smart_lock_models/exceptions/smart_lock_exception.dart';
+import 'package:ttlock_flutter/smart_lock_models/fingerprint_progress.dart';
 import 'package:ttlock_flutter/tt_gateway_connection.dart';
 import 'package:ttlock_flutter/ttgateway.dart';
 import 'package:ttlock_flutter/ttlock.dart';
-import 'package:ttlock_flutter/wifi_scan_result.dart';
+import 'package:ttlock_flutter/smart_lock_models/wifi_scan_result.dart';
 
 class SmartLock {
   /// A thin wrapper over the TTLock SDK.
@@ -473,6 +475,61 @@ class SmartLock {
       mac,
       () {},
     );
+  }
+
+  static Future<AddFingerprintResult> addFingerPrint(
+      {List<TTCycleModel>? cycleModel,
+      required DateTime startDate,
+      required DateTime endDate,
+      required String lockData}) async {
+    final progressController =
+        StreamController<FingerprintProgress>.broadcast();
+    final completer = Completer<String>();
+    TTLock.addFingerprint(cycleModel, startDate.millisecondsSinceEpoch,
+        endDate.millisecondsSinceEpoch, lockData, (currentCount, totalCount) {
+      progressController.add(FingerprintProgress(
+        currentCount: currentCount,
+        totalCount: totalCount,
+      ));
+    }, (fingerprintNumber) {
+      completer.complete(fingerprintNumber);
+    }, (error, errorMessage) {
+      completer.completeError(
+          SmartLockException(errorMessage: errorMessage, errCode: error.name));
+    });
+
+    return AddFingerprintResult(progressController.stream, completer.future);
+  }
+
+  static Future<void> getValidFingerprints(String lockData) async {
+    //TODO
+    TTLock.getAllValidFingerprints(
+        lockData, (fingerprints) {}, (error, errorMessage) {});
+  }
+
+  static Future<bool> deleteFingerprint(
+      {required String fingerprintNumber, required String lockData}) async {
+    Completer<bool> completer = Completer();
+    TTLock.deleteFingerprint(fingerprintNumber, lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+    });
+    return completer.future;
+  }
+
+  static Future<bool> deleteAllFingerprints(String lockData) async {
+    Completer<bool> completer = Completer();
+    TTLock.clearAllFingerprints(lockData, () {
+      completer.complete(true);
+    }, (error, errorMessage) {
+      completer.complete(false);
+    });
+    return completer.future;
+  }
+
+  static Future<void> modifyFingerprintPeriod() async {
+    //TODO
   }
 
   static Future<List<WifiScanResult>> scanWifi(

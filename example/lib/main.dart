@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:ttlock_flutter/smart_lock_error.dart';
+import 'package:ttlock_flutter/smart_lock_models/exceptions/smart_lock_exception.dart';
+import 'package:ttlock_flutter/smart_lock_models/wifi_scan_result.dart';
 import 'package:ttlock_flutter/tt_gateway_connection.dart';
 import 'package:ttlock_flutter/ttgateway.dart';
 import 'package:ttlock_flutter/ttlock.dart';
-import 'package:ttlock_flutter/wifi_scan_result.dart';
 
 class SmartLock {
   static StreamController<TTLockScanModel> _lockScanController =
