@@ -477,6 +477,12 @@ class SmartLock {
     );
   }
 
+  ///
+  ///Ask the lock to start adding a fingerprint.
+  ///
+  ///Returns [AddFingerprintResult] object that contains a stream to denote the progress of the operation
+  ///and a future that will complete with the fingerprint number of the newly created fingerprint
+  ///once the operation is completed.
   static Future<AddFingerprintResult> addFingerPrint(
       {List<TTCycleModel>? cycleModel,
       required DateTime startDate,
@@ -507,6 +513,9 @@ class SmartLock {
         lockData, (fingerprints) {}, (error, errorMessage) {});
   }
 
+  ///
+  /// Deletes the fingerprint with the corresponding fingerprint number
+  ///
   static Future<bool> deleteFingerprint(
       {required String fingerprintNumber, required String lockData}) async {
     Completer<bool> completer = Completer();
@@ -518,6 +527,9 @@ class SmartLock {
     return completer.future;
   }
 
+  ///
+  ///Deletes all fingerprints stored in the lock
+  ///
   static Future<bool> deleteAllFingerprints(String lockData) async {
     Completer<bool> completer = Completer();
     TTLock.clearAllFingerprints(lockData, () {

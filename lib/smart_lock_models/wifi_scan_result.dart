@@ -1,3 +1,10 @@
+///Represents a WiFi scan endpoint as returned from the lock.
+///
+/// [ssid] the ssid of the access point
+///
+/// [rssi] rssi of the access point
+///
+
 class WifiScanResult {
   String ssid;
   int rssi;

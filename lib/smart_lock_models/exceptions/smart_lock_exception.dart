@@ -1,4 +1,6 @@
-import 'package:ttlock_flutter/ttlock.dart';
+///
+///Represents an exception that occured while interacting with the TTLock SDK.
+///
 
 class SmartLockException implements Exception {
   final String errorMessage;
